@@ -1,0 +1,32 @@
+name: OpenAI Dots CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-dots:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          pip install openai redis pytest flake8
+      - name: Syntax & Lint Check
+        run: |
+          python -m py_compile dots_agent_runtime.py app_mesh_router.py
+          flake8 dots_agent_runtime.py app_mesh_router.py --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 dots_agent_runtime.py app_mesh_router.py --count --exit-zero --max-complexity=10 --max-line-length=120 --statistics
+      - name: Run Smoke Test
+        run: |
+          python dots_agent_runtime.py
+          python app_mesh_router.py
+      - name: Validate Scripts
+        run: |
+          bash scripts/validate.sh --dry-run

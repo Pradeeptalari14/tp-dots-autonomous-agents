@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: openai-dots-runtime
+  namespace: ai-agents
+  labels:
+    app: openai-dots
+spec:
+  serviceName: "dots-mesh"
+  replicas: 3
+  selector:
+    matchLabels:
+      app: openai-dots
+  template:
+    metadata:
+      labels:
+        app: openai-dots
+    spec:
+      containers:
+        - name: dots-worker
+          image: ghcr.io/pradeeptalari14/openai-dots:latest
+          command: ["python3", "dots_agent_runtime.py"]
+          resources:
+            limits:
+              memory: 4Gi
+              cpu: "2"
+            requests:
+              memory: 1Gi
+              cpu: "500m"
+          env:
+            - name: AGENT_ROLE
+              value: "sre_incident_triager"
+            - name: STATE_BACKEND
+              value: "redis_raft_cluster"
+            - name: REDIS_URL
+              value: "redis://redis-cluster.ai-agents:6379"
+          readinessProbe:
+            exec:
+              command: ["python3", "scripts/validate.sh", "--dry-run"]
+            initialDelaySeconds: 10
+            periodSeconds: 15
